@@ -32,7 +32,7 @@ void AOELootPlayer::OnPlayerLogin(Player* player)
             ChatHandler(session).PSendModuleSysMessage(MODULE_STRING, AOE_LOGIN_MESSAGE);
 }
 
-bool AOELootServer::CanPacketReceive(WorldSession* session, WorldPacket& packet)
+bool AOELootServer::CanPacketReceive(WorldSession* session, WorldPacket const& packet)
 {
     // Only handle loot packets
     if (packet.GetOpcode() != CMSG_LOOT)
@@ -71,8 +71,10 @@ bool AOELootServer::CanPacketReceive(WorldSession* session, WorldPacket& packet)
         range = 100.0f;
 
     // Read target GUID from packet
-    ObjectGuid targetGuid;
-    packet >> targetGuid;
+    // Hook receives a const packet; peek the GUID without moving the read cursor
+    if (packet.size() < sizeof(uint64))
+        return true;
+    ObjectGuid targetGuid(packet.read<uint64>(0));
 
     if (!targetGuid)
         return true;
